@@ -1,0 +1,33 @@
+{
+  "status": "ok",
+  "totalResults": 1,
+  "articles": [
+    {
+      "title": "Trump’s media company says it’s buying $2.5 billion in Bitcoin",
+      "description": "President Donald Trump’s media company could soon own $2.5 billion in Bitcoin. On Tuesday, Trump Media announced that it’s working with “approximately 50 institutional investors” to sell and issue $1.5 billion in stock and $1 billion in convertible notes. The…",
+      "content": "The Truth Social operator will get the money from a deal with investors.\r\nThe Truth Social operator will get the money from a deal with investors.\r\nPresident Donald Trumps media company could soon ow… [+1795 chars]",
+      "headlines": [
+        {
+          "score": 0.999,
+          "text": "\"Trump’s media company would soon acquire $2.5 billion in Bitcoin.\""
+        },
+        {
+          "score": 0.9982,
+          "text": "Trump’s media company announced that it’s buying $2.5 billion"
+        },
+        {
+          "score": 0.997,
+          "text": "President Donald Trump’s media company is planning to buy and issue $1.5"
+        },
+        {
+          "score": 0.9959,
+          "text": "Trump's media company could soon own $2.5 billion in Bitcoin. President Donald Trump"
+        },
+        {
+          "score": 0.9931,
+          "text": "As I mentioned in my previous post, we are currently in the midst of a"
+        }
+      ]
+    }
+  ]
+}
