@@ -18,7 +18,7 @@ tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 gen_model = GPT2LMHeadModel.from_pretrained("gpt2")
 emb_model = GPT2Model.from_pretrained("gpt2")
 
-# Add Padding Tokens {Becuase this is not default in GPT2}
+
 tokenizer.pad_token = tokenizer.eos_token
 
 gen_model.pad_token_id = gen_model.config.eos_token_id
@@ -27,7 +27,7 @@ def get_mean_embedding(input_text):
     input_text_tokens = tokenizer(input_text, return_tensors="pt")
     with torch.no_grad():
         embeddings = emb_model(**input_text_tokens)
-    return embeddings.last_hidden_state.mean(dim=1) # Share [1,768] 768-d
+    return embeddings.last_hidden_state.mean(dim=1) 
 
 
 def fetch_news_articles(Q: str, api_key: str) -> list[dict]:
@@ -48,7 +48,7 @@ def generate_headlines(prompt):
     news_headline_tokens = tokenizer(prompt, return_tensors="pt").input_ids
     headlines = gen_model.generate (
         news_headline_tokens,
-        num_return_sequences = HEADLINE_COUNT, # Fix the issue for Greedy - Beam message
+        num_return_sequences = HEADLINE_COUNT, 
         max_new_tokens =20,
         temperature = 0.8,
         top_k=50,
@@ -67,25 +67,25 @@ def process_news_articles(news_articles):
         "articles": []
     }
 
-    # Get Each News Article and get the Top 3 (count) Headlines
+   
     for id, news_article in enumerate(news_articles):
         content = news_article.get("content") or ""
         title = news_article.get("title") or ""
         description = news_article.get("description") or ""
 
-        # News Article =  "title + description + content"
+      
         news_text = f"{title}. {description}. {content}".strip()
 
-        if not news_text: # if Empty them get next article : continue
+        if not news_text: 
             continue
 
-        # Prepare Prompt : Get Healine  for Each Article (You are in for loop)
+       
         prompt = f"Write a short, one-line headline for this news: \n {news_text} \n Headline:"
         headline_candidates = generate_headlines(prompt)  or []
         if not headline_candidates:
                 continue
 
-        # Get the Original Prompt Embeddings
+       
         news_text_embedding = get_mean_embedding(prompt)
 
         result = []
@@ -95,14 +95,14 @@ def process_news_articles(news_articles):
             result.append((headline, score)
             )
 
-        # Sort all headlines by score descending
+       
         result.sort(key=lambda x: x[1], reverse=True)
 
-        # Print best one (optional)
+        
         best_headline, score = result[0]
         logging.info(f"Top headline: {best_headline} - Score {score:.4f}")
 
-        # Prepare headlines list for JSON
+       
         headlines_json = [
             {
                 "score": round(score_item[1], 4),
@@ -118,7 +118,7 @@ def process_news_articles(news_articles):
             "headlines": headlines_json
         })
 
-    # Write the final structured output to a JSON file
+   
     with open("news_output.json", "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
 
