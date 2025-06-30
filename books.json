@@ -1,0 +1,44 @@
+[
+    {
+        "id": 1,
+        "title": "1984",
+        "author": "George Orwell",
+        "genre": "Dystopian",
+        "rating": 4.8
+    },
+    {
+        "id": 2,
+        "title": "To Kill a Mockingbird",
+        "author": "Harper Lee",
+        "genre": "Classic",
+        "rating": 4.9
+    },
+    {
+        "id": 3,
+        "title": "Solo Leveling",
+        "author": "Chugong",
+        "genre": "Fantasy",
+        "rating": 4.6
+    },
+    {
+        "id": 4,
+        "title": "Her Last Wish",
+        "author": "Ajay K Pandey",
+        "genre": "Romance",
+        "rating": 4.4
+    },
+    {
+        "id": 5,
+        "title": "Everything I Never Told You",
+        "author": "Ajay K Pandey",
+        "genre": "Drama",
+        "rating": 4.3
+    },
+    {
+        "id": 6,
+        "title": "The Subtle Art of Not Giving a F*ck",
+        "author": "Mark Manson",
+        "genre": "Self-help",
+        "rating": 4.5
+    }
+]

@@ -1,130 +1,73 @@
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Optional, List
 import json
-import requests
-import logging 
-import torch
-import torch.nn.functional as F
-from transformers import GPT2LMHeadModel, GPT2Tokenizer, GPT2Model
+import os
 
-NEWS_API_URL = "https://newsapi.org/v2/everything"
-API_KEY = "b4d6de65aba64106928132030180cb44"
-HEADLINE_COUNT =5  
-ARTICLE_COUNT = 1
-Q ="bitcoin"
+app = FastAPI()
 
-logging.basicConfig(level=logging.INFO, format= "%(asctime)s - %(levelname)s -%(message)s")
+# JSON file path
+BOOKS_FILE = "books.json"
 
+# Pydantic model for Book
+class Book(BaseModel):
+    id: int
+    title: str
+    author: str
+    genre: Optional[str] = None
+    rating: Optional[float] = None
 
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
-gen_model = GPT2LMHeadModel.from_pretrained("gpt2")
-emb_model = GPT2Model.from_pretrained("gpt2")
+# Load books from file
+def load_books():
+    if os.path.exists(BOOKS_FILE):
+        with open(BOOKS_FILE, "r") as f:
+            return [Book(**b) for b in json.load(f)]
+    return []
 
+# Save books to file
+def save_books(books):
+    with open(BOOKS_FILE, "w") as f:
+        json.dump([b.dict() for b in books], f, indent=4)
 
-tokenizer.pad_token = tokenizer.eos_token
+# Initialize books
+books = load_books()
 
-gen_model.pad_token_id = gen_model.config.eos_token_id
-emb_model.pad_token_id = emb_model.config.eos_token_id
-def get_mean_embedding(input_text):
-    input_text_tokens = tokenizer(input_text, return_tensors="pt")
-    with torch.no_grad():
-        embeddings = emb_model(**input_text_tokens)
-    return embeddings.last_hidden_state.mean(dim=1) 
+# Root endpoint
+@app.get("/")
+def read_root():
+    return {"message": "Book Catalog API is running. Use /docs or Postman to interact."}
 
+# Get all books or filter by genre
+@app.get("/books", response_model=List[Book])
+def get_books(genre: Optional[str] = None):
+    if genre:
+        return [book for book in books if book.genre and book.genre.lower() == genre.lower()]
+    return books
 
-def fetch_news_articles(Q: str, api_key: str) -> list[dict]:
-    logging.info ("Fetching new articles.... Please wait")
-    news_api_response =  requests.get(NEWS_API_URL, params = {
-        "apiKey" : api_key,
-        "pageSize": ARTICLE_COUNT,
-        "q": Q
-    })
+# Get book by ID
+@app.get("/books/{book_id}", response_model=Book)
+def get_book(book_id: int):
+    for book in books:
+        if book.id == book_id:
+            return book
+    raise HTTPException(status_code=404, detail="Book not found")
 
-    news_api_response.raise_for_status()
-    news_articles = news_api_response.json().get("articles", [])
-    logging.info (f"Fetched {len(news_articles)} articles")
-    return news_articles
+# Add a new book
+@app.post("/books", response_model=Book)
+def add_book(book: Book):
+    for b in books:
+        if b.id == book.id:
+            raise HTTPException(status_code=400, detail="Book with this ID already exists")
+    books.append(book)
+    save_books(books)
+    return book
 
-
-def generate_headlines(prompt):
-    news_headline_tokens = tokenizer(prompt, return_tensors="pt").input_ids
-    headlines = gen_model.generate (
-        news_headline_tokens,
-        num_return_sequences = HEADLINE_COUNT, 
-        max_new_tokens =20,
-        temperature = 0.8,
-        top_k=50,
-        top_p  = 0.95,
-        do_sample=True
-    )
-    return [tokenizer.decode(headline, skip_special_tokens = True).replace(prompt, "").strip() for headline in headlines]
-
-
-
-def process_news_articles(news_articles):
-
-    output_data = {
-        "status": "ok",
-        "totalResults": len(news_articles),
-        "articles": []
-    }
-
-   
-    for id, news_article in enumerate(news_articles):
-        content = news_article.get("content") or ""
-        title = news_article.get("title") or ""
-        description = news_article.get("description") or ""
-
-      
-        news_text = f"{title}. {description}. {content}".strip()
-
-        if not news_text: 
-            continue
-
-       
-        prompt = f"Write a short, one-line headline for this news: \n {news_text} \n Headline:"
-        headline_candidates = generate_headlines(prompt)  or []
-        if not headline_candidates:
-                continue
-
-       
-        news_text_embedding = get_mean_embedding(prompt)
-
-        result = []
-        for headline in headline_candidates:
-            headline_mean_embedding =  get_mean_embedding(headline)
-            score = F.cosine_similarity(headline_mean_embedding,news_text_embedding).item()
-            result.append((headline, score)
-            )
-
-       
-        result.sort(key=lambda x: x[1], reverse=True)
-
-        
-        best_headline, score = result[0]
-        logging.info(f"Top headline: {best_headline} - Score {score:.4f}")
-
-       
-        headlines_json = [
-            {
-                "score": round(score_item[1], 4),
-                "text": score_item[0]
-            }
-            for score_item in result
-        ]
-
-        output_data["articles"].append({
-            "title": title,
-            "description": description,
-            "content": content,
-            "headlines": headlines_json
-        })
-
-   
-    with open("news_output.json", "w", encoding="utf-8") as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
-
-if __name__ == "__main__":
-    try:
-        articles = fetch_news_articles(Q, API_KEY)
-        process_news_articles(articles)
-    except Exception as e:
-        logging.error(f"Error: {str(e)}")
+# Delete a book by ID
+@app.delete("/books/{book_id}")
+def delete_book(book_id: int):
+    for i, book in enumerate(books):
+        if book.id == book_id:
+            del books[i]
+            save_books(books)
+            return {"message": "Book deleted successfully"}
+    raise HTTPException(status_code=404, detail="Book not found")
